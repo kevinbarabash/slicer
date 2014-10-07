@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+  <meta charset="UTF-8">
+  <title>Slicer</title>
+  <script src="../lib/three.min.js"></script>
+  <script src="../lib/OrbitControls.js"></script>
+  <style>
+    body {
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+</body>
+</html>
+<script>
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+
+  var renderer = new THREE.WebGLRenderer();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.body.appendChild(renderer.domElement);
+
+
+
+  function gauss(x,y) {
+    return Math.pow(Math.E, -(x*x + y*y));
+  }
+
+  var grid = [];
+  var count = 32;
+
+  var xMin = -2;
+  var xMax = 2;
+  var yMin = -2;
+  var yMax = 2;
+  var xStep = (xMax - xMin) / count;
+  var yStep = (yMax - yMin) / count;
+
+  var x = xMin;
+  for (var i = 0; i < count + 1; i++, x += xStep) {
+    grid[i] = [];
+    var y = yMin;
+    for (var j = 0; j < count + 1; j++, y += yStep) {
+      var z = gauss(x,y);
+      grid[i][j] = new THREE.Vector3(x, y, z);
+    }
+  }
+
+  var geometry = new THREE.Geometry();
+
+  var index = 0;
+  for (var i = 0; i < count; i++) {
+    for (var j = 0; j < count; j++) {
+      var p1 = grid[i][j];
+      var p2 = grid[i+1][j];
+      var p3 = grid[i+1][j+1];
+      var p4 = grid[i][j+1];
+
+      geometry.vertices.push(p1);
+      geometry.vertices.push(p2);
+      geometry.vertices.push(p3);
+      geometry.vertices.push(p4);
+
+      geometry.faces.push(new THREE.Face3(index + 0, index + 1, index + 2));
+      geometry.faces.push(new THREE.Face3(index + 2, index + 3, index + 0));
+
+      index += 4;
+    }
+  }
+
+  geometry.mergeVertices();
+  geometry.computeFaceNormals();
+  geometry.computeVertexNormals();
+
+
+  var material = new THREE.MeshLambertMaterial({
+    color: 0x00ff00,
+    transparent: true,
+    opacity: 0.5,
+    side: THREE.FrontSide,
+    depthTest: false,
+    depthWrite: false
+  });
+  var cube = new THREE.Mesh(geometry, material);
+  scene.add(cube);
+
+  camera.position.z = 3;
+
+  var directionalLight = new THREE.DirectionalLight(0xc0c0c0);
+  directionalLight.position.set(1, 1, 1).normalize();
+  scene.add(directionalLight);
+
+  var ambient = new THREE.AmbientLight( 0x101010 );
+  scene.add( ambient );
+
+  var render = function () {
+    requestAnimationFrame(render, renderer.domElement);
+    renderer.render(scene, camera);
+  };
+
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+  render();
+</script>
