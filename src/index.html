@@ -20,21 +20,31 @@
   var camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 
   var renderer = new THREE.WebGLRenderer();
+  renderer.setClearColor(0x333333);
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-
+  // TODO: switch to orthographic camera
+  // TODO: expose more uniforms, e.g. opacity
+  // TODO: add sliders to uniforms
+  // TODO: add axes and a grid on the xy plane
+  // TODO: equilateral triangle grid
+  // TODO: automatic subdivision to model details
 
   function gauss(x,y) {
     return Math.pow(Math.E, -(x*x + y*y));
   }
 
+  function waves(x,y) {
+    return (Math.cos(5 * x * y)) / 5;
+  }
+
   var grid = [];
-  var count = 32;
+  var count = 256;
 
   var xMin = -2;
   var xMax = 2;
-  var yMin = -2;
+  var yMin = 0;
   var yMax = 2;
   var xStep = (xMax - xMin) / count;
   var yStep = (yMax - yMin) / count;
@@ -64,8 +74,12 @@
       geometry.vertices.push(p3);
       geometry.vertices.push(p4);
 
-      geometry.faces.push(new THREE.Face3(index + 0, index + 1, index + 2));
-      geometry.faces.push(new THREE.Face3(index + 2, index + 3, index + 0));
+      // puts the diagonal bias in the other direction
+//      geometry.faces.push(new THREE.Face3(index + 0, index + 1, index + 2));
+//      geometry.faces.push(new THREE.Face3(index + 2, index + 3, index + 0));
+
+      geometry.faces.push(new THREE.Face3(index + 0, index + 1, index + 3));
+      geometry.faces.push(new THREE.Face3(index + 1, index + 2, index + 3));
 
       index += 4;
     }
@@ -76,14 +90,44 @@
   geometry.computeVertexNormals();
 
 
-  var material = new THREE.MeshLambertMaterial({
-    color: 0x00ff00,
+  var vertexShader =
+      "varying vec3 vNormal;\n" +
+      "\n" +
+      "void main(void) {\n" +
+      "  vNormal = normalize(normalMatrix * normal);\n" +
+      "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);\n" +
+      "}";
+
+  var fragmentShader =
+      "precision mediump float;\n" +
+      "varying vec3 vNormal;\n" +
+      "uniform vec3 uColor;\n" +
+      "\n" +
+      "void main(void) {\n" +
+      "  vec3 light = vec3(0.0, 0.0, 1.0);\n" +
+      "  float alpha = 0.2 + 0.7 * ( 1.0 - abs(dot(vNormal, light)) );\n" +
+      "  gl_FragColor = vec4(uColor, alpha);\n" +
+      "}";
+
+  var attributes = {};
+  var uniforms = {
+    uColor: {
+      type: 'v3',
+      value: new THREE.Vector3(1.0, 1.0, 0.0)
+    }
+  };
+
+  var material = new THREE.ShaderMaterial({
+    uniforms: uniforms,
+    attributes: attributes,
+    vertexShader: vertexShader,
+    fragmentShader: fragmentShader,
     transparent: true,
-    opacity: 0.5,
-    side: THREE.FrontSide,
+    side: THREE.DoubleSide,
     depthTest: false,
     depthWrite: false
   });
+
   var cube = new THREE.Mesh(geometry, material);
   scene.add(cube);
 
