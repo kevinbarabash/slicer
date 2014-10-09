@@ -3,123 +3,106 @@
  */
 
 var scene = new THREE.Scene();
-var camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+var width = 6;
+var height = 6;
+var camera = new THREE.OrthographicCamera(width / -2, width / 2, height / 2, height / -2, 0, 100);
+//var camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 
 var renderer = new THREE.WebGLRenderer();
 renderer.setClearColor(0x333333);
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// TODO: switch to orthographic camera
 // TODO: expose more uniforms, e.g. opacity
 // TODO: add sliders to uniforms
+// TODO: ability to switch between semi-transparent and solid
+// TODO: proper shading with light source for solid
 // TODO: add axes and a grid on the xy plane
-// TODO: equilateral triangle grid
-// TODO: automatic subdivision to model details
-// TODO: move the computation of the z-coordinates into the vertex shader
+// TODO: equilateral triangle grid?
+// TODO: automatic subdivision to model details?
 
-function gauss(x,y) {
-    return Math.pow(Math.E, -(x*x + y*y));
-}
-
-function waves(x,y) {
-    return (Math.cos(5 * x * y)) / 5;
-}
-
-var grid = [];
-var count = 64;
+var count = 128;
 
 var xMin = -2;
 var xMax = 2;
-var yMin = 0;
+var yMin = -2;
 var yMax = 2;
 var xStep = (xMax - xMin) / count;
 var yStep = (yMax - yMin) / count;
 
-var x = xMin;
-for (var i = 0; i < count + 1; i++, x += xStep) {
-    grid[i] = [];
-    var y = yMin;
-    for (var j = 0; j < count + 1; j++, y += yStep) {
-        var z = waves(x,y);
-        grid[i][j] = new THREE.Vector3(x, y, z);
-    }
-}
-
 var geometry = new THREE.Geometry();
 
 var index = 0;
-for (var i = 0; i < count; i++) {
-    for (var j = 0; j < count; j++) {
-        var p1 = grid[i][j];
-        var p2 = grid[i+1][j];
-        var p3 = grid[i+1][j+1];
-        var p4 = grid[i][j+1];
+var x1, y1, x2, y2;
+var i, j;
 
-        geometry.vertices.push(p1);
-        geometry.vertices.push(p2);
-        geometry.vertices.push(p3);
-        geometry.vertices.push(p4);
+x1 = xMin;
+for (i = 0; i < count; i++) {
+    x2 = x1 + xStep;
+    y1 = yMin;
+    for (j = 0; j < count; j++, index += 5) {
+        y2 = y1 + yStep;
 
-        // puts the diagonal bias in the other direction
-//      geometry.faces.push(new THREE.Face3(index + 0, index + 1, index + 2));
-//      geometry.faces.push(new THREE.Face3(index + 2, index + 3, index + 0));
+        geometry.vertices.push(new THREE.Vector3(x1,y1,0));
+        geometry.vertices.push(new THREE.Vector3(x2,y1,0));
+        geometry.vertices.push(new THREE.Vector3(x2,y2,0));
+        geometry.vertices.push(new THREE.Vector3(x1,y2,0));
+        geometry.vertices.push(new THREE.Vector3((x1+x2)/2,(y1+y2)/2,0));
 
-        geometry.faces.push(new THREE.Face3(index + 0, index + 1, index + 3));
-        geometry.faces.push(new THREE.Face3(index + 1, index + 2, index + 3));
+        geometry.faces.push(new THREE.Face3(index + 0, index + 1, index + 4));
+        geometry.faces.push(new THREE.Face3(index + 1, index + 2, index + 4));
+        geometry.faces.push(new THREE.Face3(index + 2, index + 3, index + 4));
+        geometry.faces.push(new THREE.Face3(index + 3, index + 0, index + 4));
 
-        index += 4;
+        y1 = y2;
     }
+    x1 = x2;
 }
 
-geometry.mergeVertices();
-geometry.computeFaceNormals();
-geometry.computeVertexNormals();
-
-
-var vertexShader =
-    "varying vec3 vNormal;\n" +
-    "varying vec3 vPosition;\n" +
-    "varying mat3 vNormalMatrix;\n" +
-    "\n" +
-    "void main(void) {\n" +
-    "  vNormal = normalize(normalMatrix * normal);\n" +
-    "  vPosition = position;\n" +
-    "  vNormalMatrix = normalMatrix;\n" +
-    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);\n" +
-    "}";
-
-var fragmentShader =
-    "precision mediump float;\n" +
-    "varying vec3 vNormal;\n" +
-    "varying vec3 vPosition;\n" +
-    "varying mat3 vNormalMatrix;\n" +
-    "uniform vec3 uColor;\n" +
-    "\n";
-
-fragmentShader +=
-//      "float func(float x, float y) {\n" +
-//      "  return exp(-(x * x + y * y));\n" +
-//      "}\n" +
-    "float func(float x, float y) {\n" +
+var waves = "float func(float x, float y) {\n" +
     "  return cos(5.0 * x * y) / 5.0;\n" +
-    "}\n" +
-    "\n";
+    "}\n";
 
-fragmentShader +=
-    "void main(void) {\n" +
-    "  vec3 light = vec3(0.0, 0.0, 1.0);\n" +
-    "  float x1 = vPosition.x;\n" +
-    "  float y1 = vPosition.y;\n" +
-    "  float d = 0.0001;\n" +
-    "  float x2 = x1 + d;\n" +
-    "  float y2 = y1 + d;\n" +
-    "  vec3 v1 = vec3(x2, y1, func(x2, y1)) - vec3(x1, y1, func(x1, y1));\n" +
-    "  vec3 v2 = vec3(x1, y2, func(x1, y2)) - vec3(x1, y1, func(x1, y1));\n" +
-    "  vec3 n = normalize(vNormalMatrix * cross(v1, v2));\n" +
-    "  float alpha = 0.2 + 0.7 * ( 1.0 - abs(dot(n, light)) );\n" +
-    "  gl_FragColor = vec4(uColor, alpha);\n" +
-    "}";
+var gauss = "float func(float x, float y) {\n" +
+      "  return exp(-(x * x + y * y));\n" +
+      "}\n";
+
+var gerateVertexShader = function (func) {
+    return "varying vec3 vNormal;\n" +
+        "varying vec3 vPosition;\n" +
+        "varying mat3 vNormalMatrix;\n" +
+        "\n" + func + "\n" +
+        "void main(void) {\n" +
+        "  vNormal = normalize(normalMatrix * normal);\n" +
+        "  vPosition = position;\n" +
+        "  vPosition.z = func(vPosition.x, vPosition.y);\n" +
+        "  vNormalMatrix = normalMatrix;\n" +
+        "  gl_Position = projectionMatrix * modelViewMatrix * vec4(vPosition,1.0);\n" +
+        "}";
+};
+
+var generateFragementShader = function (func) {
+    return "precision mediump float;\n" +
+        "varying vec3 vNormal;\n" +
+        "varying vec3 vPosition;\n" +
+        "varying mat3 vNormalMatrix;\n" +
+        "uniform vec3 uColor;\n" +
+        "\n" + func + "\n" +
+        "void main(void) {\n" +
+        "  vec3 light = vec3(0.0, 0.0, 1.0);\n" +
+        "  float x1 = vPosition.x;\n" +
+        "  float y1 = vPosition.y;\n" +
+        "  float d = 0.001;\n" +
+        "  float x2 = x1 + d;\n" +
+        "  float y2 = y1 + d;\n" +
+        "  vec3 v1 = vec3(x2, y1, func(x2, y1)) - vec3(x1, y1, func(x1, y1));\n" +
+        "  vec3 v2 = vec3(x1, y2, func(x1, y2)) - vec3(x1, y1, func(x1, y1));\n" +
+        "  vec3 n = normalize(vNormalMatrix * cross(v1, v2));\n" +
+        "  float alpha = 0.2 + 0.7 * ( 1.0 - abs(dot(n, light)) );\n" +
+        "  gl_FragColor = vec4(uColor, alpha);\n" +
+        "}";
+};
+
 
 var attributes = {};
 var uniforms = {
@@ -129,15 +112,18 @@ var uniforms = {
     }
 };
 
+var func = waves;
+
 var material = new THREE.ShaderMaterial({
     uniforms: uniforms,
     attributes: attributes,
-    vertexShader: vertexShader,
-    fragmentShader: fragmentShader,
+    vertexShader: gerateVertexShader(func),
+    fragmentShader: generateFragementShader(func),
     transparent: true,
     side: THREE.DoubleSide,
     depthTest: false,
-    depthWrite: false
+    depthWrite: false,
+//    wireframe: true
 });
 
 var cube = new THREE.Mesh(geometry, material);
@@ -153,10 +139,12 @@ var ambient = new THREE.AmbientLight( 0x101010 );
 scene.add( ambient );
 
 var render = function () {
-    requestAnimationFrame(render, renderer.domElement);
     renderer.render(scene, camera);
 };
 
 controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.addEventListener("change", function () {
+    requestAnimationFrame(render, renderer.domElement);
+});
 
-render();
+requestAnimationFrame(render, renderer.domElement);
