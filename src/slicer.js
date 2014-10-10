@@ -126,8 +126,8 @@ var material = new THREE.ShaderMaterial({
 //    wireframe: true
 });
 
-var cube = new THREE.Mesh(geometry, material);
-scene.add(cube);
+var surface = new THREE.Mesh(geometry, material);
+scene.add(surface);
 
 camera.position.z = 3;
 
@@ -138,13 +138,18 @@ scene.add(directionalLight);
 var ambient = new THREE.AmbientLight( 0x101010 );
 scene.add( ambient );
 
+var animate = function () {
+    requestAnimationFrame(animate, renderer.domElement);
+    controls.update();
+};
+
 var render = function () {
     renderer.render(scene, camera);
 };
 
-controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.addEventListener("change", function () {
-    requestAnimationFrame(render, renderer.domElement);
-});
+//var controls = new THREE.OrbitControls(camera, renderer.domElement);
+var controls = new THREE.GimbalFreeOrbitControls(surface, renderer.domElement);
+controls.addEventListener('change', render);
 
-requestAnimationFrame(render, renderer.domElement);
+render();
+animate();
