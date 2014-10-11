@@ -3,9 +3,15 @@
 <head lang="en">
   <meta charset="UTF-8">
   <title>Slicer</title>
-  <script src="../lib/three.min.js"></script>
+  <script src="../bower_components/three.js/three.min.js"></script>
   <script src="../lib/OrbitControls.js"></script>
-  <script src="GimbalFreeOrbitControls.js"></script>
+  <script src="js/GimbalFreeOrbitControls.js"></script>
+  <script src="../bower_components/requirejs/require.js"></script>
+  <script>
+    requirejs.config({
+      baseUrl: "js"
+    });
+  </script>
   <style>
     body {
       margin: 0;
@@ -15,4 +21,9 @@
 </head>
 <body></body>
 </html>
-<script src="slicer.js"></script>
+<script>
+  require(['slicer'], function () {
+
+  });
+</script>
+<!--<script src="js/slicer.js"></script>-->

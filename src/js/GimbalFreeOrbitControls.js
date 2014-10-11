@@ -7,6 +7,7 @@ THREE.GimbalFreeOrbitControls = function (object, domElement) {
     this.object = object;
     this.domElement = ( domElement !== undefined ) ? domElement : document;
 
+    var scope = this;
 
     var rotWorldMatrix;
     // Rotate an object around an arbitrary axis in world space
@@ -51,7 +52,7 @@ THREE.GimbalFreeOrbitControls = function (object, domElement) {
             lastX = e.pageX;
             lastY = e.pageY;
 
-            renderer.render(scene, camera);
+            scope.update();
         }
     });
 
@@ -61,19 +62,9 @@ THREE.GimbalFreeOrbitControls = function (object, domElement) {
         }
     });
 
-    this.update = function () {};
-
-//    this.domElement.addEventListener( 'contextmenu', function ( event ) { event.preventDefault(); }, false );
-//    this.domElement.addEventListener( 'mousedown', onMouseDown, false );
-//    this.domElement.addEventListener( 'mousewheel', onMouseWheel, false );
-//    this.domElement.addEventListener( 'DOMMouseScroll', onMouseWheel, false ); // firefox
-//
-//    this.domElement.addEventListener( 'touchstart', touchstart, false );
-//    this.domElement.addEventListener( 'touchend', touchend, false );
-//    this.domElement.addEventListener( 'touchmove', touchmove, false );
-//
-//    window.addEventListener( 'keydown', onKeyDown, false );
-
+    this.update = function () {
+        this.dispatchEvent({ type: 'change' });
+    };
 };
 
 THREE.GimbalFreeOrbitControls.prototype = Object.create( THREE.EventDispatcher.prototype );
