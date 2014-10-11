@@ -5,13 +5,14 @@
 var scene = new THREE.Scene();
 
 var aspectRatio = window.innerWidth / window.innerHeight;
-var height = 6;
-var width = 6 * aspectRatio;
+var height = 4.5;
+var width = 4.5 * aspectRatio;
 
 var camera = new THREE.OrthographicCamera(width / -2, width / 2, height / 2, height / -2, 0, 100);
 //var camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 
-var renderer = new THREE.WebGLRenderer();
+var antialias = false;
+var renderer = new THREE.WebGLRenderer({ antialias: antialias });
 renderer.setClearColor(0x333333);
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
@@ -21,6 +22,7 @@ document.body.appendChild(renderer.domElement);
 // TODO: add sliders to uniforms
 // TODO: ability to switch between semi-transparent and solid
 // TODO: proper shading with light source for solid
+// TODO: ability to chnage graphing functions on the fly
 
 var count = 128;
 
@@ -59,6 +61,19 @@ for (i = 0; i < count; i++) {
     }
     x1 = x2;
 }
+
+var sliceGeometry = new THREE.Geometry();
+y1 = yMin;
+x1 = 1.0;
+for (j = 0; j < count; j++, index += 5) {
+    y2 = y1 + yStep;
+
+    sliceGeometry.vertices.push(new THREE.Vector3(x1,y1,0));
+
+    y1 = y2;
+}
+sliceGeometry.vertices.push(new THREE.Vector3(x1,y1,0));
+
 
 var waves = "float func(float x, float y) {\n" +
     "  return cos(5.0 * x * y) / 5.0;\n" +
@@ -104,6 +119,15 @@ var generateFragementShader = function (func) {
         "}";
 };
 
+var lineFragmentShader = "precision mediump float;\n" +
+    "varying vec3 vNormal;\n" +
+    "varying vec3 vPosition;\n" +
+    "varying mat3 vNormalMatrix;\n" +
+    "uniform vec3 uColor;\n" +
+    "void main(void) {\n" +
+    "  gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n" +
+    "}";
+
 
 var attributes = {};
 var uniforms = {
@@ -113,7 +137,8 @@ var uniforms = {
     }
 };
 
-var func = waves;
+var func = gauss;
+//var func = waves;
 
 var material = new THREE.ShaderMaterial({
     uniforms: uniforms,
@@ -122,14 +147,40 @@ var material = new THREE.ShaderMaterial({
     fragmentShader: generateFragementShader(func),
     transparent: true,
     side: THREE.DoubleSide,
-//    depthTest: false,
-//    depthWrite: false,
+    depthTest: false,
+    depthWrite: false
 //    wireframe: true
 });
+
+
+var lineMaterial = new THREE.MeshBasicMaterial({
+    color: 0x0000ff
+});
+
+var uniforms2 = {
+    uColor: {
+        type: 'v3',
+        value: new THREE.Vector3(1.0, 0.0, 0.0)
+    }
+};
+var sliceMaterial = new THREE.ShaderMaterial({
+    uniforms: uniforms2,
+    attributes: attributes,
+    vertexShader: gerateVertexShader(func),
+    fragmentShader: lineFragmentShader,
+    transparent: true,
+    lineWidth: 2,
+//    side: THREE.DoubleSide,
+    depthTest: false,
+    depthWrite: false
+});
+
+var sliceLine = new THREE.Line(sliceGeometry, sliceMaterial);
 
 var world = new THREE.Object3D();
 var surface = new THREE.Mesh(geometry, material);
 world.add(surface);
+world.add(sliceLine);
 scene.add(world);
 
 camera.position.z = 3;
@@ -150,12 +201,11 @@ var render = function () {
     renderer.render(scene, camera);
 };
 
-world.rotation.x = -Math.PI / 2.5;
-world.rotation.z = -Math.PI / 1.5;
+world.rotation.x = -Math.PI / 2.4;
+world.rotation.z = -Math.PI / 1.6;
+//world.rotation.x = -1;
+//world.rotation.z = -2;
 
-var lineMaterial = new THREE.LineBasicMaterial({
-    color: 0x0000ff
-});
 
 var line;
 geometry = new THREE.Geometry();
