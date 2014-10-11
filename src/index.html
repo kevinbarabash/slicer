@@ -5,11 +5,13 @@
   <title>Slicer</title>
   <script src="../bower_components/three.js/three.min.js"></script>
   <script src="../lib/OrbitControls.js"></script>
-  <script src="js/GimbalFreeOrbitControls.js"></script>
   <script src="../bower_components/requirejs/require.js"></script>
   <script>
     requirejs.config({
-      baseUrl: "js"
+      baseUrl: "js",
+      paths: {
+        "shaders": "../shaders"
+      }
     });
   </script>
   <style>
@@ -26,4 +28,3 @@
 
   });
 </script>
-<!--<script src="js/slicer.js"></script>-->

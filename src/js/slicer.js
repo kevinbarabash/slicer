@@ -3,6 +3,8 @@
  */
 
 define(function (require) {
+    require('GimbalFreeOrbitControls');
+
     var scene = new THREE.Scene();
 
     var aspectRatio = window.innerWidth / window.innerHeight;
@@ -77,54 +79,27 @@ define(function (require) {
 
     var waves = "float func(float x, float y) {\n" +
         "  return cos(5.0 * x * y) / 5.0;\n" +
-        "}\n";
+        "}";
 
     var gauss = "float func(float x, float y) {\n" +
         "  return exp(-(x * x + y * y));\n" +
-        "}\n";
-
-    var gerateVertexShader = function (func) {
-        return "varying vec3 vPosition;\n" +
-            "varying mat3 vNormalMatrix;\n" +
-            "\n" + func + "\n" +
-            "void main(void) {\n" +
-            "  vPosition = position;\n" +
-            "  vPosition.z = func(vPosition.x, vPosition.y);\n" +
-            "  vNormalMatrix = normalMatrix;\n" +
-            "  gl_Position = projectionMatrix * modelViewMatrix * vec4(vPosition,1.0);\n" +
-            "}";
-    };
-
-    var generateFragementShader = function (func) {
-        return "precision mediump float;\n" +
-            "varying vec3 vPosition;\n" +
-            "varying mat3 vNormalMatrix;\n" +
-            "uniform vec3 uColor;\n" +
-            "\n" + func + "\n" +
-            "void main(void) {\n" +
-            "  vec3 light = vec3(0.0, 0.0, 1.0);\n" +
-            "  float x1 = vPosition.x;\n" +
-            "  float y1 = vPosition.y;\n" +
-            "  float d = 0.001;\n" +
-            "  float x2 = x1 + d;\n" +
-            "  float y2 = y1 + d;\n" +
-            "  vec3 v1 = vec3(x2, y1, func(x2, y1)) - vec3(x1, y1, func(x1, y1));\n" +
-            "  vec3 v2 = vec3(x1, y2, func(x1, y2)) - vec3(x1, y1, func(x1, y1));\n" +
-            "  vec3 n = normalize(vNormalMatrix * cross(v1, v2));\n" +
-            "  float alpha = 0.2 + 0.7 * ( 1.0 - abs(dot(n, light)) );\n" +
-            "  gl_FragColor = vec4(uColor, alpha);\n" +
-            "}";
-    };
-
-    var lineFragmentShader = "precision mediump float;\n" +
-        "varying vec3 vNormal;\n" +
-        "varying vec3 vPosition;\n" +
-        "varying mat3 vNormalMatrix;\n" +
-        "uniform vec3 uColor;\n" +
-        "void main(void) {\n" +
-        "  gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n" +
         "}";
 
+    var surfaceVertexShader = require('text!shaders/surfaceVert.glsl');
+    var gerateVertexShader = function (func) {
+        return surfaceVertexShader.replace('// FUNC', func);
+    };
+
+    var surfaceFragmentShader = require('text!shaders/surfaceFrag.glsl');
+    var generateFragementShader = function (func) {
+        return surfaceFragmentShader.replace('// FUNC', func);
+    };
+
+    var lineFragmentShader = require('text!shaders/lineFrag.glsl');
+    var lineVertexShader = require('text!shaders/lineVert.glsl');
+    var generateLineVertexShader = function (func) {
+        return lineVertexShader.replace('// FUNC', func);
+    };
 
     var attributes = {};
     var uniforms = {
@@ -148,10 +123,6 @@ define(function (require) {
     });
 
 
-    var lineMaterial = new THREE.MeshBasicMaterial({
-        color: 0x0000ff
-    });
-
     var uniforms2 = {
         uColor: {
             type: 'v3',
@@ -161,14 +132,14 @@ define(function (require) {
     var sliceMaterial = new THREE.ShaderMaterial({
         uniforms: uniforms2,
         attributes: attributes,
-        vertexShader: gerateVertexShader(func),
+        vertexShader: generateLineVertexShader(func),
         fragmentShader: lineFragmentShader,
         transparent: true,
         depthTest: false,
         depthWrite: false
     });
 
-    var sliceLine = new THREE.Line(sliceGeometry, lineMaterial);
+    var sliceLine = new THREE.Line(sliceGeometry, sliceMaterial);
 
     var world = new THREE.Object3D();
     var surface = new THREE.Mesh(geometry, material);
@@ -198,6 +169,10 @@ define(function (require) {
     world.rotation.z = -Math.PI / 1.6;
     //world.rotation.x = -1;
     //world.rotation.z = -2;
+
+    var lineMaterial = new THREE.LineBasicMaterial({
+        color: 0x0000ff
+    });
 
     var line;
     geometry = new THREE.Geometry();
