@@ -3,8 +3,11 @@
  */
 
 var scene = new THREE.Scene();
-var width = 6;
+
+var aspectRatio = window.innerWidth / window.innerHeight;
 var height = 6;
+var width = 6 * aspectRatio;
+
 var camera = new THREE.OrthographicCamera(width / -2, width / 2, height / 2, height / -2, 0, 100);
 //var camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 
@@ -13,13 +16,11 @@ renderer.setClearColor(0x333333);
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
+// TODO: add slice line overlay
 // TODO: expose more uniforms, e.g. opacity
 // TODO: add sliders to uniforms
 // TODO: ability to switch between semi-transparent and solid
 // TODO: proper shading with light source for solid
-// TODO: add axes and a grid on the xy plane
-// TODO: equilateral triangle grid?
-// TODO: automatic subdivision to model details?
 
 var count = 128;
 
@@ -121,13 +122,15 @@ var material = new THREE.ShaderMaterial({
     fragmentShader: generateFragementShader(func),
     transparent: true,
     side: THREE.DoubleSide,
-    depthTest: false,
-    depthWrite: false,
+//    depthTest: false,
+//    depthWrite: false,
 //    wireframe: true
 });
 
+var world = new THREE.Object3D();
 var surface = new THREE.Mesh(geometry, material);
-scene.add(surface);
+world.add(surface);
+scene.add(world);
 
 camera.position.z = 3;
 
@@ -147,8 +150,37 @@ var render = function () {
     renderer.render(scene, camera);
 };
 
+world.rotation.x = -Math.PI / 2.5;
+world.rotation.z = -Math.PI / 1.5;
+
+var lineMaterial = new THREE.LineBasicMaterial({
+    color: 0x0000ff
+});
+
+var line;
+geometry = new THREE.Geometry();
+geometry.vertices.push(new THREE.Vector3(0, 0, 0));
+geometry.vertices.push(new THREE.Vector3(4, 0, 0));
+line = new THREE.Line(geometry, lineMaterial);
+world.add(line);
+
+geometry = new THREE.Geometry();
+geometry.vertices.push(new THREE.Vector3(0, 0, 0));
+geometry.vertices.push(new THREE.Vector3(0, 4, 0));
+line = new THREE.Line(geometry, lineMaterial);
+world.add(line);
+
+geometry = new THREE.Geometry();
+geometry.vertices.push(new THREE.Vector3(0, 0, 0));
+geometry.vertices.push(new THREE.Vector3(0, 0, 4));
+line = new THREE.Line(geometry, lineMaterial);
+world.add(line);
+
+//surface.rotateY((60).toRadians());
+//surface.rotateX((-45).toRadians());
+
 //var controls = new THREE.OrbitControls(camera, renderer.domElement);
-var controls = new THREE.GimbalFreeOrbitControls(surface, renderer.domElement);
+var controls = new THREE.GimbalFreeOrbitControls(world, renderer.domElement);
 controls.addEventListener('change', render);
 
 render();
