@@ -35,10 +35,10 @@ define(function () {
         return geometry;
     }
 
-    function buildCurve(yMin, yMax, count) {
+    function buildCurve(yMin, yMax, count, xPos) {
         var geometry = new THREE.Geometry();
         var y1 = yMin;
-        var x1 = 1.0;
+        var x1 = xPos;
         var yStep = (yMax - yMin) / count;
         var j;
         var index = 0;

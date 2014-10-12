@@ -1,6 +1,4 @@
-/**
- * Created by kevin on 2014-10-09.
- */
+/*global THREE */
 
 define(function () {
     THREE.GimbalFreeOrbitControls = function (object, domElement) {
