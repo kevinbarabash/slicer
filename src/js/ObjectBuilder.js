@@ -135,11 +135,35 @@ define(function (require) {
         return axes;
     }
 
+    function buildGrid() {
+        var grid = new THREE.Object3D();
+
+        var lineMaterial = new THREE.LineBasicMaterial({
+            color: 0x666666
+        });
+
+        var geometry;
+        for (var i = 0; i <= 3; i += 0.25) {
+            geometry = new THREE.Geometry();
+            geometry.vertices.push(new THREE.Vector3(i, 0, 0));
+            geometry.vertices.push(new THREE.Vector3(i, 3, 0));
+            grid.add(new THREE.Line(geometry, lineMaterial));
+
+            geometry = new THREE.Geometry();
+            geometry.vertices.push(new THREE.Vector3(0, i, 0));
+            geometry.vertices.push(new THREE.Vector3(3, i, 0));
+            grid.add(new THREE.Line(geometry, lineMaterial));
+        }
+
+        return grid;
+    }
+
     return {
         buildCurve: buildCurve,
         buildXSlice: buildXSlice,
         buildYSlice: buildYSlice,
         buildSurface: buildSurface,
-        buildAxes: buildAxes
+        buildAxes: buildAxes,
+        buildGrid: buildGrid
     };
 });

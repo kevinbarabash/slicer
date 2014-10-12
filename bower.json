@@ -17,6 +17,7 @@
     "requirejs": "~2.1.15"
   },
   "dependencies": {
-    "three.js": "*"
+    "three.js": "*",
+    "dat.gui": "*"
   }
 }

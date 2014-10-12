@@ -14,13 +14,17 @@ define(function (require) {
     var aspectRatio = window.innerWidth / window.innerHeight;
     var height = 4.5;
     var width = 4.5 * aspectRatio;
-    var camera = new THREE.OrthographicCamera(width / -2, width / 2, height / 2, height / -2, 0, 100);
-    //var camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-    camera.position.z = 3;
+    var orthoCamera = new THREE.OrthographicCamera(width / -2, width / 2, height / 2, height / -2, 0, 100);
+    orthoCamera.position.z = 3;
 
+    var pCamera = new THREE.PerspectiveCamera(30, window.innerWidth/window.innerHeight, 0.1, 1000);
+    pCamera.position.z = 3;
+
+    var camera = pCamera;
 
     var antialias = false;
     var renderer = new THREE.WebGLRenderer({ antialias: antialias });
+    window.renderer = renderer;
     renderer.setClearColor(0x333333);
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
@@ -31,7 +35,7 @@ define(function (require) {
     var yMax = 2.0;
 
     var func = funcs.gauss;
-    var count = 16;
+    var count = 32;
 
     var curves = [];
 
@@ -56,7 +60,6 @@ define(function (require) {
     }
 
     var surface = ObjectBuilder.buildSurface(func);
-    var axes = ObjectBuilder.buildAxes();
 
     var xSlicesObj = new THREE.Object3D();
     xSlices.forEach(function (slice) {
@@ -78,23 +81,26 @@ define(function (require) {
     world.add(surface);
     world.add(curvesObj);
 
-    surface.visible = false;
+    surface.visible = true;
     xSlicesObj.visible = false;
-    ySlicesObj.visible = true;
-    curvesObj.visible = true;
+    ySlicesObj.visible = false;
+    curvesObj.visible = false;
 
     window.surface = surface;
     window.curves = curvesObj;
     window.xSlices = xSlicesObj;
     window.ySlices = ySlicesObj;
 
+    var axes = ObjectBuilder.buildAxes();
+    var grid = ObjectBuilder.buildGrid();
+
     world.add(axes);
+    world.add(grid);
 
     world.rotation.x = -Math.PI / 2.4;
     world.rotation.z = -Math.PI / 1.6;
-    //world.rotation.x = -1;
-    //world.rotation.z = -2;
 
+    world.position.z = -5;
 
     var animate = function () {
         requestAnimationFrame(animate, renderer.domElement);
@@ -111,4 +117,118 @@ define(function (require) {
 
     render();
     animate();
+
+    var settings = {
+        reset: function () {
+            world.rotation.x = -Math.PI / 2.4;
+            world.rotation.y = 0;
+            world.rotation.z = -Math.PI / 1.6;
+            camera = pCamera;
+        }
+    };
+
+    Object.defineProperty(settings, "surface", {
+        get: function () {
+            return surface.visible;
+        },
+        set: function (value) {
+            surface.visible = value;
+        }
+    });
+
+    Object.defineProperty(settings, "curves", {
+        get: function () {
+            return curvesObj.visible;
+        },
+        set: function (value) {
+            curvesObj.visible = value;
+        }
+    });
+
+    Object.defineProperty(settings, "xSlices", {
+        get: function () {
+            return xSlicesObj.visible;
+        },
+        set: function (value) {
+            xSlicesObj.visible = value;
+        }
+    });
+
+    Object.defineProperty(settings, "ySlices", {
+        get: function () {
+            return ySlicesObj.visible;
+        },
+        set: function (value) {
+            ySlicesObj.visible = value;
+        }
+    });
+
+    Object.defineProperty(settings, "rotation_x", {
+        get: function () {
+            return world.rotation.x;
+        },
+        set: function (value) {
+            world.rotation.x = value;
+        }
+    });
+
+    Object.defineProperty(settings, "rotation_z", {
+        get: function () {
+            return world.rotation.z;
+        },
+        set: function (value) {
+            world.rotation.z = value;
+        }
+    });
+
+    Object.defineProperty(settings, "camera", {
+        get: function () {
+            if (camera === pCamera) {
+                return "perspective";
+            } else if (camera == orthoCamera) {
+                return "orthographic"
+            }
+        },
+        set: function (value) {
+            if (value === "perspective") {
+                camera = pCamera;
+            } else if (value === "orthographic") {
+                camera = orthoCamera;
+            }
+        }
+    });
+
+    Object.defineProperty(settings, "axes", {
+        get: function () {
+            return axes.visible;
+        },
+        set: function (value) {
+            axes.visible = value;
+        }
+    });
+
+    Object.defineProperty(settings, "grid", {
+        get: function () {
+            return grid.visible;
+        },
+        set: function (value) {
+            grid.visible = value;
+        }
+    });
+
+    var gui = new dat.GUI();
+    gui.add(settings, "surface");
+    gui.add(settings, "curves");
+    gui.add(settings, "xSlices");
+    gui.add(settings, "ySlices");
+
+    gui.add(settings, "rotation_x", -Math.PI, 0);
+    gui.add(settings, "rotation_z", -3*Math.PI/2, Math.PI/2);
+
+    gui.add(settings, 'camera', [ 'orthographic', 'perspective' ] );
+
+    gui.add(settings, "axes");
+    gui.add(settings, "grid");
+
+    gui.add(settings, 'reset');
 });
