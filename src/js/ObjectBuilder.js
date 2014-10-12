@@ -61,6 +61,51 @@ define(function (require) {
         return new THREE.Line(geometry, material);
     }
 
+    var sliceFragmentShader = require('text!shaders/sliceFrag.glsl');
+    var sliceVertexShader = require('text!shaders/sliceVert.glsl');
+
+    function buildXSlice(yMin, yMax, func, xPos) {
+        var geometry = GeometryBuilder.buildXSlice(yMin, yMax, 128, xPos);
+        var material = new THREE.ShaderMaterial({
+            uniforms: {
+                uColor: {
+                    type: 'v3',
+                    value: new THREE.Vector3(0.0, 1.0, 1.0)
+                }
+            },
+            attributes: {},
+            vertexShader: sliceVertexShader.replace('// FUNC', func),
+            fragmentShader: sliceFragmentShader,
+            transparent: true,
+            side: THREE.DoubleSide,
+            depthTest: false,
+            depthWrite: false
+        });
+
+        return new THREE.Mesh(geometry, material);
+    }
+
+    function buildYSlice(xMin, xMax, func, yPos) {
+        var geometry = GeometryBuilder.buildYSlice(xMin, xMax, 128, yPos);
+        var material = new THREE.ShaderMaterial({
+            uniforms: {
+                uColor: {
+                    type: 'v3',
+                    value: new THREE.Vector3(0.0, 1.0, 1.0)
+                }
+            },
+            attributes: {},
+            vertexShader: sliceVertexShader.replace('// FUNC', func),
+            fragmentShader: sliceFragmentShader,
+            transparent: true,
+            side: THREE.DoubleSide,
+            depthTest: false,
+            depthWrite: false
+        });
+
+        return new THREE.Mesh(geometry, material);
+    }
+
     function buildAxes() {
         var axes = new THREE.Object3D();
 
@@ -92,6 +137,8 @@ define(function (require) {
 
     return {
         buildCurve: buildCurve,
+        buildXSlice: buildXSlice,
+        buildYSlice: buildYSlice,
         buildSurface: buildSurface,
         buildAxes: buildAxes
     };

@@ -25,21 +25,70 @@ define(function (require) {
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
+    var xMin = -2.0;
+    var xMax = 2.0;
+    var yMin = -2.0;
+    var yMax = 2.0;
+
+    var func = funcs.gauss;
+    var count = 16;
 
     var curves = [];
-    for (var i = 0.0; i < 2.0; i += 0.1) {
-        curves.push(ObjectBuilder.buildCurve(funcs.gauss, i));
+
+    for (var i = -2.0; i < 2.0; i += 0.25) {
+        curves.push(ObjectBuilder.buildCurve(func, i));
     }
 
-    var surface = ObjectBuilder.buildSurface(funcs.gauss);
+    var xSlices = [];
+    var xCount = count;
+    var xStep = (xMax - xMin) / xCount;
+    for (var i = 0, x = xMin; i <= xCount; i++) {
+        xSlices.push(ObjectBuilder.buildXSlice(yMin, yMax, func, x));
+        x += xStep
+    }
+
+    var ySlices = [];
+    var yCount = count;
+    var yStep = (yMax - yMin) / yCount;
+    for (var i = 0, y = yMin; i <= yCount; i++) {
+        ySlices.push(ObjectBuilder.buildYSlice(xMin, xMax, func, y));
+        y += yStep;
+    }
+
+    var surface = ObjectBuilder.buildSurface(func);
     var axes = ObjectBuilder.buildAxes();
 
-    world.add(surface);
-    curves.forEach(function (curve) {
-        world.add(curve);
+    var xSlicesObj = new THREE.Object3D();
+    xSlices.forEach(function (slice) {
+        xSlicesObj.add(slice);
     });
-    world.add(axes);
 
+    var ySlicesObj = new THREE.Object3D();
+    ySlices.forEach(function (slice) {
+        ySlicesObj.add(slice);
+    });
+
+    var curvesObj = new THREE.Object3D();
+    curves.forEach(function (curve) {
+        curvesObj.add(curve);
+    });
+
+    world.add(xSlicesObj);
+    world.add(ySlicesObj);
+    world.add(surface);
+    world.add(curvesObj);
+
+    surface.visible = false;
+    xSlicesObj.visible = false;
+    ySlicesObj.visible = true;
+    curvesObj.visible = true;
+
+    window.surface = surface;
+    window.curves = curvesObj;
+    window.xSlices = xSlicesObj;
+    window.ySlices = ySlicesObj;
+
+    world.add(axes);
 
     world.rotation.x = -Math.PI / 2.4;
     world.rotation.z = -Math.PI / 1.6;
