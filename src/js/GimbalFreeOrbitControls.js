@@ -47,6 +47,7 @@ define(function () {
 
                 var axis = new THREE.Vector3(dy/d, dx/d, 0);
                 rotateAroundWorldAxis(object, axis, d / 200);
+                object.rotation.y = 0;
 
                 lastX = e.pageX;
                 lastY = e.pageY;

@@ -36,17 +36,17 @@ define(function (require) {
 
     var func = funcs.gauss;
     var count = 32;
+    var i, x, y;
 
     var curves = [];
-
-    for (var i = -2.0; i < 2.0; i += 0.25) {
+    for (i = -2.0; i < 2.0; i += 0.25) {
         curves.push(ObjectBuilder.buildCurve(func, i));
     }
 
     var xSlices = [];
     var xCount = count;
     var xStep = (xMax - xMin) / xCount;
-    for (var i = 0, x = xMin; i <= xCount; i++) {
+    for (i = 0, x = xMin; i <= xCount; i++) {
         xSlices.push(ObjectBuilder.buildXSlice(yMin, yMax, func, x));
         x += xStep
     }
@@ -54,7 +54,7 @@ define(function (require) {
     var ySlices = [];
     var yCount = count;
     var yStep = (yMax - yMin) / yCount;
-    for (var i = 0, y = yMin; i <= yCount; i++) {
+    for (i = 0, y = yMin; i <= yCount; i++) {
         ySlices.push(ObjectBuilder.buildYSlice(xMin, xMax, func, y));
         y += yStep;
     }
@@ -109,6 +109,10 @@ define(function (require) {
 
     var render = function () {
         renderer.render(scene, camera);
+        if (settings) {
+            settings.rotation_x = world.rotation.x;
+            settings.rotation_z = world.rotation.z;
+        }
     };
 
     //var controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -216,14 +220,107 @@ define(function (require) {
         }
     });
 
+    var surfaceVertexShader = require('text!shaders/surfaceVert.glsl');
+    var gerateVertexShader = function (func) {
+        return surfaceVertexShader.replace('// FUNC', func);
+    };
+
+    var surfaceFragmentShader = require('text!shaders/surfaceFrag.glsl');
+    var generateFragementShader = function (func) {
+        return surfaceFragmentShader.replace('// FUNC', func);
+    };
+
+    Object.defineProperty(settings, "function", {
+        get: function () {
+            if (func === funcs.gauss) {
+                return "gauss";
+            } else if (func === funcs.waves) {
+                return "waves";
+            }
+        },
+        set: function (value) {
+            if (value === "gauss") {
+                func = funcs.gauss;
+            } else if (value === "waves") {
+                func = funcs.waves;
+            }
+
+            var surfaceVisible = surface.visible;
+            var xSlicesVisible = xSlicesObj.visible;
+            var ySlicesVisible = ySlicesObj.visible;
+            var curvesVisible = curvesObj.visible;
+
+            world.remove(surface);
+            world.remove(xSlicesObj);
+            world.remove(ySlicesObj);
+            world.remove(curvesObj);
+
+            var i;
+
+            var curves = [];
+            for (i = -2.0; i < 2.0; i += 0.25) {
+                curves.push(ObjectBuilder.buildCurve(func, i));
+            }
+
+            var xSlices = [];
+            var xCount = count;
+            var xStep = (xMax - xMin) / xCount;
+            for (i = 0, x = xMin; i <= xCount; i++) {
+                xSlices.push(ObjectBuilder.buildXSlice(yMin, yMax, func, x));
+                x += xStep
+            }
+
+            var ySlices = [];
+            var yCount = count;
+            var yStep = (yMax - yMin) / yCount;
+            for (i = 0, y = yMin; i <= yCount; i++) {
+                ySlices.push(ObjectBuilder.buildYSlice(xMin, xMax, func, y));
+                y += yStep;
+            }
+
+            surface.material.vertexShader = gerateVertexShader(func);
+            surface.material.needsUpdate = true;
+            surface.material.fragmentShader = generateFragementShader(func);
+            surface.material.needsUpdate = true;
+
+            xSlicesObj = new THREE.Object3D();
+            xSlices.forEach(function (slice) {
+                xSlicesObj.add(slice);
+            });
+
+            ySlicesObj = new THREE.Object3D();
+            ySlices.forEach(function (slice) {
+                ySlicesObj.add(slice);
+            });
+
+            curvesObj = new THREE.Object3D();
+            curves.forEach(function (curve) {
+                curvesObj.add(curve);
+            });
+
+            surface.visible = surfaceVisible;
+            xSlicesObj.visible = xSlicesVisible;
+            ySlicesObj.visible = ySlicesVisible;
+            curvesObj.visible = curvesVisible;
+
+            world.add(xSlicesObj);
+            world.add(ySlicesObj);
+            world.add(surface);
+            world.add(curvesObj);
+        }
+    });
+
     var gui = new dat.GUI();
+
     gui.add(settings, "surface");
     gui.add(settings, "curves");
     gui.add(settings, "xSlices");
     gui.add(settings, "ySlices");
 
-    gui.add(settings, "rotation_x", -Math.PI, 0);
-    gui.add(settings, "rotation_z", -3*Math.PI/2, Math.PI/2);
+    gui.add(settings, "function", [ "gauss", "waves" ]);
+
+    gui.add(settings, "rotation_x", -Math.PI, 0).listen();
+    gui.add(settings, "rotation_z", -3*Math.PI/2, Math.PI/2).listen();
 
     gui.add(settings, 'camera', [ 'orthographic', 'perspective' ] );
 
@@ -231,4 +328,6 @@ define(function (require) {
     gui.add(settings, "grid");
 
     gui.add(settings, 'reset');
+
+    window.gui = gui;
 });
