@@ -3,6 +3,10 @@ precision mediump float;
 varying vec3 vPosition;
 varying mat3 vNormalMatrix;
 uniform vec3 uColor;
+uniform float uXMax;
+uniform float uYMax;
+uniform float uXMin;
+uniform float uYMin;
 
 // FUNC
 
@@ -21,5 +25,20 @@ void main(void) {
     vec3 n = normalize(vNormalMatrix * cross(v1, v2));
 
     float alpha = 0.2 + 0.7 * ( 1.0 - abs(dot(n, light)) );
+
+    // TODO: use smooth step to antialias the edge
+    if (vPosition.x > uXMax) {
+        alpha = 0.0;
+    }
+    if (vPosition.y > uYMax) {
+        alpha = 0.0;
+    }
+    if (vPosition.x < uXMin) {
+        alpha = 0.0;
+    }
+    if (vPosition.y < uYMin) {
+        alpha = 0.0;
+    }
+
     gl_FragColor = vec4(uColor, alpha);
 }

@@ -14,14 +14,30 @@ define(function (require) {
         return surfaceFragmentShader.replace('// FUNC', func);
     };
 
-    function buildSurface(func) {
-        var geometry = GeometryBuilder.buildGrid(-2, 2, -2, 2, 128);
+    function buildSurface(func, xMin, xMax, yMin, yMax) {
+        var geometry = GeometryBuilder.buildGrid( -2, 2, -2, 2, 128);
         var material = new THREE.ShaderMaterial({
             attributes: {},
             uniforms: {
                 uColor: {
                     type: 'v3',
                     value: new THREE.Vector3(1.0, 1.0, 0.0)
+                },
+                uXMax: {
+                    type: '1f',
+                    value: xMax
+                },
+                uYMax: {
+                    type: '1f',
+                    value: yMax
+                },
+                uXMin: {
+                    type: '1f',
+                    value: xMin
+                },
+                uYMin: {
+                    type: '1f',
+                    value: yMin
                 }
             },
             vertexShader: gerateVertexShader(func),
