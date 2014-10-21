@@ -38,14 +38,18 @@ define(function (require) {
                 uYMin: {
                     type: '1f',
                     value: yMin
+                },
+                uSolid: {
+                    type: 'i',
+                    value: true
                 }
             },
             vertexShader: gerateVertexShader(func),
             fragmentShader: generateFragementShader(func),
             transparent: true,
             side: THREE.DoubleSide,
-            depthTest: false,
-            depthWrite: false
+            depthTest: true,
+            depthWrite: true
         });
 
         return new THREE.Mesh(geometry, material);

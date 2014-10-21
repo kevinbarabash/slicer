@@ -35,10 +35,10 @@ define(function (require) {
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    var xMin = -2.0;
-    var xMax = 0.0;
+    var xMin = 0.0;
+    var xMax = 2.0;
     var yMin = -2.0;
-    var yMax = 0.0;
+    var yMax = 2.0;
 
     var func = funcs.gauss;
     var count = 32;
@@ -378,6 +378,18 @@ define(function (require) {
         }
     });
 
+    Object.defineProperty(settings, "solid", {
+        get: function () {
+            return surface.material.uniforms.uSolid.value;
+        },
+        set: function (value) {
+            surface.material.uniforms.uSolid.value = value;
+            surface.material.depthTest = value;
+            surface.material.depthWrite = value;
+            surface.material.needsUpdate = true;
+        }
+    });
+
     settings.fullscreen = function () {
         var elem = document.body;
         if (elem.requestFullscreen) {
@@ -396,6 +408,7 @@ define(function (require) {
     gui.add(settings, "fullscreen");
 
     gui.add(settings, "surface");
+    gui.add(settings, "solid");
     gui.addColor(settings, "color", [255,255,0]);
     gui.add(settings, "xMax", 0, 2).listen();
     gui.add(settings, "yMax", 0, 2);
